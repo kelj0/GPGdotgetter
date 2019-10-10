@@ -48,7 +48,7 @@ def API_login():
         try:
             email = ast.literal_eval(request.data.decode('UTF-8'))['email']
             password = ast.literal_eval(request.data.decode('UTF-8'))['password']
-        except ValueError:
+        except (ValueError, KeyError):
             return jsonify({
                 'code': 400,
                 'message': 'Invalid input'
@@ -126,6 +126,16 @@ def API_register():
             'message': 'Only POST request allowed'
         })
     return response
+
+
+@app.route('/api/upload', methods=['POST'])
+def API_upload():
+    pass #Implement me
+
+
+@app.route('/api/download', methods=['POST'])
+def API_download():
+    pass #Implement me
 
 
 # ======================

@@ -9,6 +9,8 @@
         <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
         <!--Axios-->
         <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+        <link rel="stylesheet" href="../static/index.css">
     </head>
     <body>
         <div id="app">
@@ -22,7 +24,7 @@
                 <ul>
                     <li><input type="text" id='input_email_login' name='email' placeholder="Email"></li>
                     <li><input type="password" id='input_password_login' name='password' placeholder="Password"></li>
-                    <li><input class="btn btn-default" value="Login" v-on:click="login"></li>
+                    <li><button class="btn btn-default" value="Login" v-on:click="login">Login</button></li>
                     <p v-if="response != null" id="p_response_login"><strong>[[ response ]]</strong></p>
                 </ul>
             </div>
