@@ -1,19 +1,14 @@
 import sys
-import jsonify
-from flask import Flask, session, redirect, url_for, render_template, request
-from flask_sqlalchemy import SQLAlchemy
+import ast
+import datetime
+import os
+from flask import session, redirect, url_for, render_template, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
-from models import User, Dotfile
+from db_models import User, Dotfile, app, db
 from utils import generateRandomString
 
-# App configuration ====
-app = Flask('GPGdotgetter')
-app.config['DATABASE_FILE'] = 'GPGdotgetter_DB.sqlite'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///GPGdotgetter_DB.sqlite'
-app.secret_key = "CHANGE_ME"
-# ======================
-db = SQLAlchemy(app)
+
 SESSIONID_SIZE = 256
 
 
@@ -41,7 +36,8 @@ def index():
 @login_required
 def logout():
     session.pop('logged_in', False)
-    return redirect(url_for('home'))
+    session.pop('sessionID', False)
+    return redirect(url_for('index'))
 
 
 @login_required
@@ -49,24 +45,30 @@ def logout():
 def API_login():
     response = None
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
+        try:
+            email = ast.literal_eval(request.data.decode('UTF-8'))['email']
+            password = ast.literal_eval(request.data.decode('UTF-8'))['password']
+        except ValueError:
+            return jsonify({
+                'code': 400,
+                'message': 'Invalid input'
+            })
         q = User.query.filter_by(email=email).first()
-        if len(email) < 3 or len(password) < 8 or not q:
+        if len(email) < 3 or len(password) < 2 or not q:
             response = jsonify({
                 'code': 401,
                 'message': 'Email or password incorrect'
             })
-        elif check_password_hash("pbkdf2:sha512:131072$" + q.password, password):
+        elif check_password_hash(q.password, password):
             session['logged_in'] = True
+            session['sessionID'] = generateRandomString(SESSIONID_SIZE)
             response = jsonify({
                 'code': 200,
                 'message': 'Success',
-                'sessionID': generateRandomString(SESSIONID_SIZE),
-                'logged_in': True
+                'sessionID': session['sessionID']
             })
         else:
-            response - jsonify({
+            response = jsonify({
                 'code': 501,
                 'message': 'Server cannot interpret that email or password'
             })
@@ -82,9 +84,15 @@ def API_login():
 def API_register():
     response = None
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        rpassword = request.form['rpassword']
+        try:
+            email = ast.literal_eval(request.data.decode('UTF-8'))['email']
+            password = ast.literal_eval(request.data.decode('UTF-8'))['password']
+            rpassword = ast.literal_eval(request.data.decode('UTF-8'))['rpassword']
+        except ValueError:
+            return jsonify({
+                'code': 400,
+                'message': 'Invalid input'
+            })
         if len(email) < 3 or len(password) < 8:
             return jsonify({
                 'code': 422,
@@ -103,10 +111,7 @@ def API_register():
             })
         u = User(
                 email=email,
-                password=generate_password_hash(
-                    password,
-                    method="pbkdf2:sha512:131072"
-                ),
+                password=generate_password_hash(password, method="pbkdf2:sha512:131072"),
                 validated=False
             )
         db.session.add(u)
@@ -125,7 +130,27 @@ def API_register():
 
 # ======================
 def StartServer():
-    print("helloworld")
+    app_dir = os.path.realpath(os.path.dirname(__file__))
+    db_path = os.path.join(app_dir, app.config['DATABASE_FILE'])
+    if not os.path.exists(db_path):
+        build_db()
+    app.run(host='0.0.0.0', debug=True)
+
+
+def build_db():
+    print("================CREATING TEST DB================")
+    db.create_all()
+    u = User(
+        email="test@test.com",
+        password=generate_password_hash("test", method="pbkdf2:sha512:131072"),
+        validated=False
+    )
+    d1 = Dotfile(createdOn=datetime.datetime.now(), password="testpass")
+    d2 = Dotfile(createdOn=datetime.datetime.now(), password="testpass2")
+    u.dotfiles.extend([d1, d2])
+    db.session.add(u)
+    db.session.add_all([d1, d2])
+    db.session.commit()
 
 
 if __name__ == '__main__':

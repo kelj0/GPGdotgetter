@@ -1,4 +1,4 @@
 from server import StartServer
 
-if __name___ == '__main__':
+if __name__ == '__main__':
     StartServer()
