@@ -1,0 +1,10 @@
+body{
+    background-color: rgb(22, 170, 178);
+}
+#safeImage{
+    width: 40%;
+    height: auto;   
+}
+#wrapper{
+    text-align: center;
+}
