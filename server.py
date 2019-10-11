@@ -88,7 +88,7 @@ def API_register():
             email = ast.literal_eval(request.data.decode('UTF-8'))['email']
             password = ast.literal_eval(request.data.decode('UTF-8'))['password']
             rpassword = ast.literal_eval(request.data.decode('UTF-8'))['rpassword']
-        except ValueError:
+        except (ValueError, KeyError):
             return jsonify({
                 'code': 400,
                 'message': 'Invalid input'
