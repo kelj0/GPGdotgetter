@@ -20,3 +20,8 @@ def sendConfirmationEmail(email,token):
     if m:
         print("Problems while sending email to %s!" % email)
     m.quit()
+
+def allowed_file(filename,extensions):
+    '''Returns true if file is valid to be uploaded'''
+    return '.' in filename and \
+        filename.rsplit('.', 1)[1].lower() in extensions 

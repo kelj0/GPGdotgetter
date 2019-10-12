@@ -4,22 +4,27 @@ import datetime
 import os
 from flask import session, redirect, url_for, render_template, request, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug import secure_filename
 from functools import wraps
 from db_models import User, Dotfile, app, db
-from utils import generateRandomString
+from utils import generateRandomString, allowed_file
 
 
 SESSIONID_SIZE = 256
-
+UPLOAD_ROOT =  os.path.join(os.getcwd(),'USER_FILES')
+ALLOWED_EXTENSIONS = set(['gpg'])
 
 # decorators ===========
 def login_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if(session.get('logged_in')):
+        if session.get('logged_in'):
             return f(*args, **kwargs)
         else:
-            return redirect(url_for('index'))
+            return jsonify({
+                'code': 403,
+                'message': 'You are unauthorized to access that'
+                })
     return wrap
 
 
@@ -32,15 +37,16 @@ def index():
 
 # ================
 # routes.api =====
-@app.route('/api/logout', methods=['POST'])
+@app.route('/api/logout')
 @login_required
 def logout():
-    session.pop('logged_in', False)
-    session.pop('sessionID', False)
-    return redirect(url_for('index'))
+    session.pop('logged_in', None)
+    session.pop('sessionID', None)
+    return jsonify({
+        'code': 205,
+        'message': 'Sucessfully logged out'
+        })
 
-
-@login_required
 @app.route('/api/login', methods=['POST'])
 def API_login():
     response = None
@@ -62,6 +68,7 @@ def API_login():
         elif check_password_hash(q.password, password):
             session['logged_in'] = True
             session['sessionID'] = generateRandomString(SESSIONID_SIZE)
+            session['email'] = str(email).split('@')[0]
             response = jsonify({
                 'code': 200,
                 'message': 'Success',
@@ -98,8 +105,8 @@ def API_register():
                 'code': 422,
                 'message': 'Minimal length of password is 8, minimal length of email is 4'
             })
-        q = User.query.filter_by(email=email).first()  # return None if nothing got selected
-        if not q:
+        q = db.session.query(User).filter_by(email=email).first()  # return None if nothing got selected
+        if q:
             return jsonify({
                 'code': 400,
                 'message': 'That email is already registred'
@@ -116,6 +123,7 @@ def API_register():
             )
         db.session.add(u)
         db.session.commit()
+        os.mkdir(os.path.join(UPLOAD_ROOT,str(email).split('@')[0]))
         response = jsonify({
             'code': 201,
             'message': 'Created new account'
@@ -127,13 +135,25 @@ def API_register():
         })
     return response
 
-
 @app.route('/api/upload', methods=['POST'])
+@login_required
 def API_upload():
-    pass #Implement me
+    f = request.files['file']
+    try:
+        f.save(os.path.join(UPLOAD_ROOT,session['email'],secure_filename(f.filename)))
+    except KeyError:
+        return jsonify({
+            'code': 400,
+            'message': 'That user doesnt exists'
+            })
+    return jsonify({
+        'code': 200,
+        'message': 'Sucessfully uploaded file %s' % secure_filename(f.filename)
+        })
 
 
 @app.route('/api/download', methods=['POST'])
+@login_required
 def API_download():
     pass #Implement me
 
@@ -161,7 +181,7 @@ def build_db():
     db.session.add(u)
     db.session.add_all([d1, d2])
     db.session.commit()
-
+    os.mkdir(os.path.join(UPLOAD_ROOT,'test'))
 
 if __name__ == '__main__':
     print("Please run main.py to start server")
