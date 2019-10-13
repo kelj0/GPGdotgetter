@@ -12,6 +12,7 @@ Easily and securely store and deploy your dotfiles
 `curl -c cookie -b cookie savedots.me/api/logout`
 
 `TODO:`
+
 -[ ] - Setup
     - [ ] - create script to gather all dotfiles
     - [ ] - makefile
