@@ -13,7 +13,7 @@ Easily and securely store and deploy your dotfiles
 
 `TODO:`
 
--[ ] - Setup
+- [ ] - Setup
     - [ ] - create script to gather all dotfiles
     - [ ] - makefile
     - [ ] - documentation
