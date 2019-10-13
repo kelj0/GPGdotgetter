@@ -6,10 +6,11 @@ Easily and securely store and deploy your dotfiles
 `curl -b cookie -c cookie -H 'Content-Type:application/json' savedots.me/api/login -d '{"email":"YOUR_EMAIL","password":"YOUR_PASSWORD"}'`
 
 ##### Upload file
-`curl -b cookie -c cookie -F file=@FILE_PATH  savedots.me/api/upload`
+`curl -b cookie -c cookie -F "sessionID=YOUR_SESSIONID" -F file=@FILE_PATH savedots.me/api/upload`
 
 ##### Logout
-`curl -c cookie -b cookie savedots.me/api/logout`
+`curl -c cookie -b cookie -X GET -F "sessionID=YOUR_SESSIONID" --url savedots.me/api/logout`
+
 
 `TODO:`
 

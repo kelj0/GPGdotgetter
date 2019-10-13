@@ -15,18 +15,26 @@ UPLOAD_ROOT =  os.path.join(os.getcwd(),'USER_FILES')
 ALLOWED_EXTENSIONS = set(['gpg'])
 
 # decorators ===========
-def login_required(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if session.get('logged_in'):
-            return f(*args, **kwargs)
-        else:
-            return jsonify({
-                'code': 403,
-                'message': 'You are unauthorized to access that'
-                })
-    return wrap
-
+def login_required(req):
+    def sessionDecorator(f):
+        @wraps(f)
+        def wrap(*args, **kwargs):
+            try:
+                sessID = req.form['sessionID']
+                if session.get('logged_in') and (sessID == session['sessionID']):
+                    return f(*args, **kwargs)
+                else:
+                    return jsonify({
+                        'code': 403,
+                        'message': 'You are unauthorized to access that'
+                        })
+            except (KeyError, SyntaxError):
+                    return jsonify({
+                        'code': 400,
+                        'message': 'SessionID is missing'
+                        })
+        return wrap
+    return sessionDecorator
 
 # ======================
 # routes ===============
@@ -38,7 +46,7 @@ def index():
 # ================
 # routes.api =====
 @app.route('/api/logout')
-@login_required
+@login_required(request)
 def logout():
     session.pop('logged_in', None)
     session.pop('sessionID', None)
@@ -136,7 +144,7 @@ def API_register():
     return response
 
 @app.route('/api/upload', methods=['POST'])
-@login_required
+@login_required(request)
 def API_upload():
     f = request.files['file']
     try:
@@ -152,7 +160,7 @@ def API_upload():
         })
 
 
-@app.route('/api/download', methods=['POST'])
+@app.route('/api/download/<string:user>/<string:file>', methods=['POST'])
 @login_required
 def API_download():
     pass #Implement me
