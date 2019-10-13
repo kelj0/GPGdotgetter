@@ -147,15 +147,22 @@ def API_register():
 @login_required(request)
 def API_upload():
     f = request.files['file']
+    fname = secure_filename(f.filename)
     try:
-        f.save(os.path.join(UPLOAD_ROOT,session['email'],secure_filename(f.filename)))
+        if allowed_file(fname,ALLOWED_EXTENSIONS):
+            f.save(os.path.join(UPLOAD_ROOT,session['email'],fname))
+        else:
+            return jsonify({
+                'code': 405,
+                'message': 'Unsuported type of file'
+                })
     except KeyError:
         return jsonify({
             'code': 400,
             'message': 'That user doesnt exists'
             })
     return jsonify({
-        'code': 200,
+        'code': 201,
         'message': 'Sucessfully uploaded file %s' % secure_filename(f.filename)
         })
 
