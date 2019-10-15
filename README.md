@@ -13,10 +13,10 @@ Easily and securely store and deploy your dotfiles
        - [x] - login
        - [x] - logout
        - [x] - register
-       - [ ] - upload deploy.gpg
-       - [ ] - download deploy.gpg
+       - [x] - upload deploy.gpg
+       - [x] - download deploy.gpg
        - [ ] - delete deploy.gpg
-       - [ ] - list all deploy.gpg's
+       - [x] - list all deploy.gpg's
        - [ ] - validate email
    - [x] - ~~database~~
        - [x] - model
@@ -37,6 +37,12 @@ Easily and securely store and deploy your dotfiles
 ##### Upload file
 `curl -b cookie -c cookie -F "sessionID=YOUR_SESSIONID" -F file=@FILE_PATH savedots.me/api/upload`
 
+##### List all your files
+`curl -b cookie -c cookie -X GET -F "sessionID=YOUR_SESSIONID" --url savedots.me/api/list_files`
+
+##### Download file(use key generated from /api/list_files
+`curl -b cookie -c cookie -X GET -F "sessionID=YOUR_SESSIONID" -F "fileID=KEY_FROM_list_files" --url savedots.me/api/download -o FILENAME`
+
 ##### Logout
 `curl -c cookie -b cookie -X GET -F "sessionID=YOUR_SESSIONID" --url savedots.me/api/logout`
 
@@ -45,16 +51,24 @@ Easily and securely store and deploy your dotfiles
 ```sh
 # echoes SESSID or 0
 login(){
-    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' localhost:5000/api/login -d '{"email":"$1","password":"$2"}' | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
-    if [ ${#sessid} == 256 ] then 
-        echo $sessid
+    echo '<Login>' >&2
+    echo 'Email: '>&2
+    read email 
+    echo 'Password: '>&2
+    read -s password
+    echo "Loging in with $email : $password">&2
+    echo 1
+    return # for purpuses of testing dont actually login, just test io 
+    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' savedots.me/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
+    if [ ${#sessid} == 256 ]; then 
+        echo $sessid>&2
     else
         echo 0
     fi
 }
 ```
 ```sh
-# logout user (needs sessionid as param
+# logout user (needs sessionid as param)
 logout(){
     curl -c cookie -b cookie -X GET -F "sessionID=$1" --url savedots.me/api/logout
 }

@@ -2,7 +2,7 @@ import random
 import string
 import smtplib
 
-def generateRandomString(N):
+def generate_random_string(N):
     '''Returns random string of N chars long'''
     return ''.join(
             random.SystemRandom().choice(

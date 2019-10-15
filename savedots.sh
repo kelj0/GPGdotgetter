@@ -6,6 +6,7 @@ logout(){
 upload_file(){
     curl -b cookie -c cookie -F "sessionID=$1" -F file=@$2 savedots.me/api/upload
 }
+
 # echoes SESSID or 0
 login(){
     echo '<Login>' >&2

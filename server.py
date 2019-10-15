@@ -2,16 +2,16 @@ import sys
 import ast
 import datetime
 import os
-from flask import session, redirect, url_for, render_template, request, jsonify
+from flask import session, redirect, url_for, render_template, request, jsonify, send_file
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug import secure_filename
 from functools import wraps
 from db_models import User, Dotfile, app, db
-from utils import generateRandomString, allowed_file
+from utils import generate_random_string, allowed_file
 
 
 SESSIONID_SIZE = 256
-UPLOAD_ROOT =  os.path.join(os.getcwd(),'USER_FILES')
+USER_ROOT =  os.path.join(os.getcwd(),'USER_FILES')
 ALLOWED_EXTENSIONS = set(['gpg'])
 
 # decorators ===========
@@ -75,7 +75,7 @@ def API_login():
             })
         elif check_password_hash(q.password, password):
             session['logged_in'] = True
-            session['sessionID'] = generateRandomString(SESSIONID_SIZE)
+            session['sessionID'] = generate_random_string(SESSIONID_SIZE)
             session['email'] = str(email).split('@')[0]
             response = jsonify({
                 'code': 200,
@@ -131,7 +131,7 @@ def API_register():
             )
         db.session.add(u)
         db.session.commit()
-        os.mkdir(os.path.join(UPLOAD_ROOT,str(email).split('@')[0]))
+        os.mkdir(os.path.join(USER_ROOT, str(email).split('@')[0]))
         response = jsonify({
             'code': 201,
             'message': 'Created new account'
@@ -143,6 +143,7 @@ def API_register():
         })
     return response
 
+
 @app.route('/api/upload', methods=['POST'])
 @login_required(request)
 def API_upload():
@@ -150,7 +151,7 @@ def API_upload():
     fname = secure_filename(f.filename)
     try:
         if allowed_file(fname,ALLOWED_EXTENSIONS):
-            f.save(os.path.join(UPLOAD_ROOT,session['email'],fname))
+            f.save(os.path.join(USER_ROOT, session['email'], fname))
         else:
             return jsonify({
                 'code': 405,
@@ -167,11 +168,47 @@ def API_upload():
         })
 
 
-@app.route('/api/download/<string:user>/<string:file>', methods=['POST'])
-@login_required
-def API_download():
-    pass #Implement me
+@app.route('/api/list_files', methods=['GET'])
+@login_required(request)
+def API_list_files():
+    response = {}
+    try:
+        for f in os.listdir(os.path.join(USER_ROOT, session['email'])):
+            fileID = generate_random_string(8)
+            session[fileID]  = f
+            response[fileID] = f
+        response['code'] = 100
+        response = jsonify(response)
+    except Exception as e: # TODO: catch specific exception
+        print(e)
+        response = jsonify({
+            'code': 500,
+            'message': 'Unknown server error occured, our developers are working to solve it'
+            })
+    return response
 
+@app.route('/api/download', methods=['GET'])
+@login_required(request)
+def API_download():
+    response = None 
+    try:
+        fileID = request.form['fileID']
+        filename = session[fileID]
+        filePath = os.path.join(USER_ROOT, session['email'], filename)
+        if os.path.exists(filePath):
+            return send_file(filePath)
+        else:
+            response = jsonify({
+               'code': 404,
+               'message': 'File not found'
+               }) 
+    except Exception as e: # TODO: catch specific exception
+        print(e)
+        response = jsonify({
+            'code': 500,
+            'message': 'Unknown server error occured, our developers are working to solve it'
+            })
+    return response
 
 # ======================
 def StartServer():
@@ -196,8 +233,10 @@ def build_db():
     db.session.add(u)
     db.session.add_all([d1, d2])
     db.session.commit()
-    os.mkdir(os.path.join(UPLOAD_ROOT,'test'))
+    os.mkdir(os.path.join(USER_ROOT,'test'))
+
 
 if __name__ == '__main__':
     print("Please run main.py to start server")
     sys.exit(1)
+
