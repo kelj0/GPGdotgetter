@@ -187,6 +187,7 @@ def API_list_files():
             })
     return response
 
+
 @app.route('/api/download', methods=['GET'])
 @login_required(request)
 def API_download():
@@ -202,6 +203,34 @@ def API_download():
                'code': 404,
                'message': 'File not found'
                }) 
+    except Exception as e: # TODO: catch specific exception
+        print(e)
+        response = jsonify({
+            'code': 500,
+            'message': 'Unknown server error occured, our developers are working to solve it'
+            })
+    return response
+
+
+@app.route('/api/remove_file', methods=['POST'])
+@login_required(request)
+def API_remove_file():
+    response = None
+    try:
+        fileID = request.form['fileID']
+        filename = session[fileID]
+        filePath = os.path.join(USER_ROOT, session['email'], filename)
+        if os.path.exists(filePath):
+            os.remove(filePath)
+            response = jsonify({
+                'code': 200,
+                'message': 'File successfully deleted'
+                })
+        else:
+            response = jsonify({
+                'code': 404,
+                'message': 'File doesn\'t exist'
+                })
     except Exception as e: # TODO: catch specific exception
         print(e)
         response = jsonify({

@@ -15,7 +15,7 @@ Easily and securely store and deploy your dotfiles
        - [x] - register
        - [x] - upload deploy.gpg
        - [x] - download deploy.gpg
-       - [ ] - delete deploy.gpg
+       - [x] - delete deploy.gpg
        - [x] - list all deploy.gpg's
        - [ ] - validate email
    - [x] - ~~database~~
@@ -40,8 +40,11 @@ Easily and securely store and deploy your dotfiles
 ##### List all your files
 `curl -b cookie -c cookie -X GET -F "sessionID=YOUR_SESSIONID" --url savedots.me/api/list_files`
 
-##### Download file(use key generated from /api/list_files
+##### Download file(use key returned from /api/list_files
 `curl -b cookie -c cookie -X GET -F "sessionID=YOUR_SESSIONID" -F "fileID=KEY_FROM_list_files" --url savedots.me/api/download -o FILENAME`
+
+##### Delete file(using key returned from /api/list_files)
+`curl -b cookie -c cookie -X POST -F "sessionID=YOUR_SESSIONID" -F "fileID=KEY_FROM_list_files" localhost:5000/api/remove_file`
 
 ##### Logout
 `curl -c cookie -b cookie -X GET -F "sessionID=YOUR_SESSIONID" --url savedots.me/api/logout`
