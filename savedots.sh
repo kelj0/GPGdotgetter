@@ -56,12 +56,12 @@ register(){
     read -s password
     echo 'Repeat password:'>&2
     read -s rpassword
-    if [ $password != $rpassword ] then
+    if [ $password != $rpassword ]; then
         echo 'Your passwords dont match!'>&2
         register
     else
         resp=$(curl -b -c -H 'Content-Type:application/json' savedots.me/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
-        if [ $(echo $resp | awk '$1 ~ /code/ {print $2}') != 201 ] then
+        if [ $(echo $resp | awk '$1 ~ /code/ {print $2}') != 201 ]; then
             echo $resp >&2 
             register
         else
@@ -73,10 +73,30 @@ register(){
 
 gatherAndCompressDots(){
     cd ~
-    mkdir $1"_TEMP_"
-    for f in ".*" do
-        cp -r $f $1"_TEMP_"
+    mkdir $1"_TEMP_/"
+    mkdir $1"_TEMP_/.config/"
+    for f in ./.config/*
+    do
         echo "Backuping $f"
+        cp -r $f $1"_TEMP_/.config/"
+    done
+    while true; do
+        read -p "Do you want to backup your ssh keys?(y/N)" yn
+        case $yn in
+            [Yy]* )
+                if [ -d "./.ssh"  ]; then
+                    cp -r ./.ssh $1"_TEMP_/" 
+                else
+                    echo "Cant find your .ssh folder, im skipping"
+                fi
+                ;;
+            [Nn]* )
+                echo "Ok skipping .ssh"
+                break
+                ;;
+            * )
+                echo "Please answer y or n" ;;
+        esac
     done
     7z a $1".7z" $1"_TEMP_/"
     gpg -c --cipher-algo AES256 $1".7z"
@@ -88,12 +108,13 @@ gatherAndCompressDots(){
 getDots(){
     echo '<Get dDots>'
     curl -b cookie -c cookie -X GET -F "sessionID=$1" --url savedots.me/api/list_files
+    
 }
 
 # collects,encrypts and uploads your dotfiles to server
 saveDots(){
     echo '<Save dots>'
-    read -p "How do you want to call your dots" gpgName
+    read -p "How do you want to call your dots: " gpgName
     gatherAndCompressDots $gpgName
     upload_file $1 $gpgName".7z.gpg"
 }
@@ -106,10 +127,9 @@ getPackageManager(){
     osInfo[/etc/gentoo-release]=emerge
     osInfo[/etc/SuSE-release]=zypp
     osInfo[/etc/debian_version]=apt-get
-
     for f in ${!osInfo[@]}
     do
-        if [[ -f $f ]];then
+        if [[ -f $f ]]; then
             echo ${osInfo[$f]}
         fi
     done
@@ -119,8 +139,7 @@ getPackageManager(){
 # Program
 #################
 echo "Checking if you are root(needed if you dont have gpg installer on system)"
-if [ $(whoami) != "root" ]
-then 
+if [ $(whoami) != "root" ]; then 
     echo "You are not root"; 
 else 
     echo "You are root"; 
@@ -141,8 +160,9 @@ while true; do
                 echo "Wrong email or password!"
             else
                 echo "Successfully logged in"
+                break
             fi
-            break;;
+            ;;
         [Nn]* )
             register
             SESSID=$(login)
@@ -150,8 +170,9 @@ while true; do
                 echo "Wrong email or password!"
             else
                 echo "Successfully logged in"
+                break
             fi
-            break;;
+            ;;
         * ) echo "Please answer y or n.";;
     esac
 done
