@@ -64,7 +64,7 @@ login(){
     return # for purpuses of testing dont actually login, just test io 
     sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' savedots.me/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
     if [ ${#sessid} == 256 ]; then 
-        echo $sessid>&2
+        echo $sessid
     else
         echo 0
     fi

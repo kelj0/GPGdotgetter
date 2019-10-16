@@ -50,44 +50,111 @@ login(){
 # registers new user or stops program execution
 register(){
     echo '<Registration>' >&2
-    while true; do
-        read -p "Please enter your email:"
+    echo 'Email:'>&2
+    read email
+    echo 'Password:'>&2
+    read -s password
+    echo 'Repeat password:'>&2
+    read -s rpassword
+    if [ $password != $rpassword ] then
+        echo 'Your passwords dont match!'>&2
+        register
+    else
+        resp=$(curl -b -c -H 'Content-Type:application/json' savedots.me/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
+        if [ $(echo $resp | awk '$1 ~ /code/ {print $2}') != 201 ] then
+            echo $resp >&2 
+            register
+        else
+            echo 'Successfully created new account'>&2
+        fi
+    fi
+    
+}
+
+gatherAndCompressDots(){
+    cd ~
+    mkdir $1"_TEMP_"
+    for f in ".*" do
+        cp -r $f $1"_TEMP_"
+        echo "Backuping $f"
     done
-    echo 'Email: '>&2
+    7z a $1".7z" $1"_TEMP_/"
+    gpg -c --cipher-algo AES256 $1".7z"
+    rm -rf $1"_TEMP_"
+    rm -rf $1".7z"
 }
 
 # downloads your dotfiles, decrypts them, and mv them where needed 
 getDots(){
-    echo "Getting your dotfiles..."
-    echo "Implement me"
+    echo '<Get dDots>'
+    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url savedots.me/api/list_files
 }
 
 # collects,encrypts and uploads your dotfiles to server
 saveDots(){
-    echo "Welcome to your one stop to safe dots"
-    while true; do
-        read -p "Do you have account at savedots.me(y/N)?" yn
-        case $yn in
-            [Yy]* )
-                SESSID=$(login)
-                if [ $SESSID == 1 ]; then
-                    echo "Uploading file with SESSID> $SESSID"
-                else
-                    echo "Wrong email or password!"
-                fi
-                break;;
-            [Nn]* )
-                register
-                break;;
-            * ) echo "Please answer y or n.";;
-        esac
+    echo '<Save dots>'
+    read -p "How do you want to call your dots" gpgName
+    gatherAndCompressDots $gpgName
+    upload_file $1 $gpgName".7z.gpg"
+}
+
+# echoes your package manager
+getPackageManager(){
+    declare -A osInfo;
+    osInfo[/etc/redhat-release]=yum
+    osInfo[/etc/arch-release]=pacman
+    osInfo[/etc/gentoo-release]=emerge
+    osInfo[/etc/SuSE-release]=zypp
+    osInfo[/etc/debian_version]=apt-get
+
+    for f in ${!osInfo[@]}
+    do
+        if [[ -f $f ]];then
+            echo ${osInfo[$f]}
+        fi
     done
 }
 
 #################
 # Program
 #################
+echo "Checking if you are root(needed if you dont have gpg installer on system)"
+if [ $(whoami) != "root" ]
+then 
+    echo "You are not root"; 
+else 
+    echo "You are root"; 
+fi;
+PACKAGE_MANAGER=$(getPackageManager)
+echo "Your package manager is $PACKAGE_MANAGER"
+echo "Installing gpg and 7z"
+sudo $PACKAGE_MANAGER install gpg p7zip-full -y
+echo "Now you're good to go"
 
+echo "Welcome to your one stop to safe dots"
+while true; do
+    read -p "Do you have account at savedots.me(y/N)?" yn
+    case $yn in
+        [Yy]* )
+            SESSID=$(login)
+            if [ $SESSID == 0 ]; then
+                echo "Wrong email or password!"
+            else
+                echo "Successfully logged in"
+            fi
+            break;;
+        [Nn]* )
+            register
+            SESSID=$(login)
+            if [ $SESSID == 0 ]; then
+                echo "Wrong email or password!"
+            else
+                echo "Successfully logged in"
+            fi
+            break;;
+        * ) echo "Please answer y or n.";;
+    esac
+done
 options=("Saving my dotfiles", "Downloading existing")
 PS3="> "
 echo "Are you saving your dots or downloading existing?"
@@ -96,12 +163,12 @@ do
     case $REPLY in
         1)
             echo "Saving dotifles"
-            saveDots
+            saveDots $SESSID
             break
             ;;
         2)
             echo "Downloading existing"
-            getDots
+            getDots $SESSID
             break
             ;;
         3)
@@ -111,7 +178,6 @@ do
         *) echo "Invalid input!"
     esac
 done
-return 
 
 echo "Thank you for using savedots by @kelj0"
 
