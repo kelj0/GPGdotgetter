@@ -102,6 +102,7 @@ gatherAndCompressDots(){
                 else
                     echo "[!] Cant find your .ssh folder, im skipping"
                 fi
+                break
                 ;;
             [Nn]* )
                 echo -e "\e[32m[OK]\e[0m skipping .ssh"
@@ -160,7 +161,7 @@ fi;
 PACKAGE_MANAGER=$(getPackageManager)
 echo "Your package manager is $PACKAGE_MANAGER"
 echo "Installing gpg and 7z"
-sudo $PACKAGE_MANAGER install gpg p7zip-full -y
+sudo $PACKAGE_MANAGER install gpg p7zip-full curl -y
 echo "Now you're good to go"
 
 echo "Welcome to your one stop to safe dots"
