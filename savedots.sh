@@ -11,21 +11,21 @@
 # logout user
 # @param1:sessionID
 logout(){
-    curl -c cookie -b cookie -X GET -F "sessionID=$1" --url savedots.me/api/logout
+    curl -c cookie -b cookie -X GET -F "sessionID=$1" --url localhost:5000/api/logout
 }
 
 # uploads file 
 # @param1: sessionID, 
 # @param2:file path
 upload_file(){
-    curl -b cookie -c cookie -F "sessionID=$1" -F file=@$2 savedots.me/api/upload
+    curl -b cookie -c cookie -F "sessionID=$1" -F file=@$2 localhost:5000/api/upload
 }
 
 # downloads file 
 # @param1: sessionID,
 # @param2: fileID
 download_file(){
-    curl -b cookie -c cookie -X GET -F "sessionID=$1" -F "fileID=$2" --url savedots.me/api/download -O
+    curl -b cookie -c cookie -X GET -F "sessionID=$1" -F "fileID=$2" --url localhost:5000/api/download -O
 }
 
 # logins user
@@ -39,7 +39,7 @@ login(){
     echo 'Password: '>&2
     read -s password
     echo "Loging in with $email : $password">&2
-    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' savedots.me/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
+    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' localhost:5000/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
     if [ ${#sessid} == 256 ]; then 
         echo $sessid
     else
@@ -60,7 +60,7 @@ register(){
         echo 'Your passwords dont match!'>&2
         register
     else
-        resp=$(curl -b -c -H 'Content-Type:application/json' savedots.me/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
+        resp=$(curl -b -c -H 'Content-Type:application/json' localhost:5000/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
         if [ $(echo $resp | awk '$1 ~ /code/ {print $2}') != 201 ]; then
             echo $resp >&2 
             register
@@ -77,25 +77,38 @@ gatherAndCompressDots(){
     mkdir $1"_TEMP_/.config/"
     for f in ./.config/*
     do
-        echo "Backuping $f"
-        cp -r $f $1"_TEMP_/.config/"
+        echo "[+] Backuping $f"
+        #for f in $(find . -maxdepth 1 -type d -name "\.*" -printf "%P\n");
+        #do
+        if [[ $(du -cs $f | awk '$2 ~ /total/ {print $1}') -gt 10000 ]]; then
+            read -p "[!] $f is bigger than 10000 do you really want to backup that?" yn;
+            case $yn in
+                [Yy]* )
+                    cp -r ./config/$f $1"_TEMP_/.config/"
+                    ;;
+                [Nn]* )
+                    echo -e "\e[32m[OK]\e[0m skipping $f"
+                    ;;
+            esac
+        fi;
+        #done
     done
     while true; do
-        read -p "Do you want to backup your ssh keys?(y/N)" yn
+        read -p "[?] Do you want to backup your ssh keys?(y/N)" yn
         case $yn in
             [Yy]* )
                 if [ -d "./.ssh"  ]; then
                     cp -r ./.ssh $1"_TEMP_/" 
                 else
-                    echo "Cant find your .ssh folder, im skipping"
+                    echo "[!] Cant find your .ssh folder, im skipping"
                 fi
                 ;;
             [Nn]* )
-                echo "Ok skipping .ssh"
+                echo -e "\e[32m[OK]\e[0m skipping .ssh"
                 break
                 ;;
             * )
-                echo "Please answer y or n" ;;
+                echo "[!] Please answer y or n" ;;
         esac
     done
     7z a $1".7z" $1"_TEMP_/"
@@ -107,14 +120,14 @@ gatherAndCompressDots(){
 # downloads your dotfiles, decrypts them, and mv them where needed 
 getDots(){
     echo '<Get dDots>'
-    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url savedots.me/api/list_files
+    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url localhost:5000/api/list_files
     
 }
 
 # collects,encrypts and uploads your dotfiles to server
 saveDots(){
     echo '<Save dots>'
-    read -p "How do you want to call your dots: " gpgName
+    read -p "[?] How do you want to call your dots: " gpgName
     gatherAndCompressDots $gpgName
     upload_file $1 $gpgName".7z.gpg"
 }
@@ -140,9 +153,9 @@ getPackageManager(){
 #################
 echo "Checking if you are root(needed if you dont have gpg installer on system)"
 if [ $(whoami) != "root" ]; then 
-    echo "You are not root"; 
+    echo "[!] You are not root"; 
 else 
-    echo "You are root"; 
+    echo "[+] You are root"; 
 fi;
 PACKAGE_MANAGER=$(getPackageManager)
 echo "Your package manager is $PACKAGE_MANAGER"
@@ -152,14 +165,14 @@ echo "Now you're good to go"
 
 echo "Welcome to your one stop to safe dots"
 while true; do
-    read -p "Do you have account at savedots.me(y/N)?" yn
+    read -p "[?] Do you have account at localhost:5000(y/N)?" yn
     case $yn in
         [Yy]* )
             SESSID=$(login)
             if [ $SESSID == 0 ]; then
-                echo "Wrong email or password!"
+                echo "[!] Wrong email or password!"
             else
-                echo "Successfully logged in"
+                echo -e "\e[32m[OK]\e[0m Successfully logged in"
                 break
             fi
             ;;
@@ -167,18 +180,18 @@ while true; do
             register
             SESSID=$(login)
             if [ $SESSID == 0 ]; then
-                echo "Wrong email or password!"
+                echo "[!] Wrong email or password!"
             else
-                echo "Successfully logged in"
+                echo -e "\e[32m[OK]\e[0m Successfully logged in"
                 break
             fi
             ;;
-        * ) echo "Please answer y or n.";;
+        * ) echo "[!] Please answer y or n.";;
     esac
 done
 options=("Saving my dotfiles", "Downloading existing")
 PS3="> "
-echo "Are you saving your dots or downloading existing?"
+echo "[?] Are you saving your dots or downloading existing?"
 select opt in "${options[@]}" "Quit";
 do
     case $REPLY in
