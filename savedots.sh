@@ -3,29 +3,31 @@
 # @github: https://github.com/kelj0
 # @year: 2019
 ###################################
-
+# Globals #
+###########
+URL="localhost:5000"
 ###############################
-# Functions
-###############################
+# Functions #
+#############
 
 # logout user
 # @param1:sessionID
 logout(){
-    curl -c cookie -b cookie -X GET -F "sessionID=$1" --url localhost:5000/api/logout
+    curl -c cookie -b cookie -X GET -F "sessionID=$1" --url $URL/api/logout
 }
 
 # uploads file 
 # @param1: sessionID, 
 # @param2:file path
 upload_file(){
-    curl -b cookie -c cookie -F "sessionID=$1" -F file=@$2 localhost:5000/api/upload
+    curl -b cookie -c cookie -F "sessionID=$1" -F file=@$2 $URL/api/upload
 }
 
 # downloads file 
 # @param1: sessionID,
 # @param2: fileID
 download_file(){
-    curl -b cookie -c cookie -X GET -F "sessionID=$1" -F "fileID=$2" --url localhost:5000/api/download -O
+    curl -b cookie -c cookie -X GET -F "sessionID=$1" -F "fileID=$2" --url $URL/api/download -O
 }
 
 # logins user
@@ -39,7 +41,7 @@ login(){
     echo 'Password: '>&2
     read -s password
     echo "Loging in with $email : $password">&2
-    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' localhost:5000/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
+    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' $URL/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
     if [ ${#sessid} == 256 ]; then 
         echo $sessid
     else
@@ -60,7 +62,7 @@ register(){
         echo 'Your passwords dont match!'>&2
         register
     else
-        resp=$(curl -b -c -H 'Content-Type:application/json' localhost:5000/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
+        resp=$(curl -b -c -H 'Content-Type:application/json' $URL/api/register -d "{'email': '$email', 'password': '$password', 'rpassword': '$rpassword'}") 
         if [ $(echo $resp | awk '$1 ~ /code/ {print $2}') != 201 ]; then
             echo $resp >&2 
             register
@@ -78,8 +80,6 @@ gatherAndCompressDots(){
     for f in ./.config/*
     do
         echo "[+] Backuping $f"
-        #for f in $(find . -maxdepth 1 -type d -name "\.*" -printf "%P\n");
-        #do
         if [[ $(du -cs $f | awk '$2 ~ /total/ {print $1}') -gt 10000 ]]; then
             read -p "[!] $f is bigger than 10000 do you really want to backup that?" yn;
             case $yn in
@@ -87,11 +87,10 @@ gatherAndCompressDots(){
                     cp -r ./config/$f $1"_TEMP_/.config/"
                     ;;
                 [Nn]* )
-                    echo -e "\e[32m[OK]\e[0m skipping $f"
+                    echo -e "[ \e[32mOK\e[0m ] skipping $f"
                     ;;
             esac
         fi;
-        #done
     done
     while true; do
         read -p "[?] Do you want to backup your ssh keys?(y/N)" yn
@@ -102,10 +101,9 @@ gatherAndCompressDots(){
                 else
                     echo "[!] Cant find your .ssh folder, im skipping"
                 fi
-                break
                 ;;
             [Nn]* )
-                echo -e "\e[32m[OK]\e[0m skipping .ssh"
+                echo -e "[ \e[32mOK\e[0m ] skipping .ssh"
                 break
                 ;;
             * )
@@ -121,7 +119,7 @@ gatherAndCompressDots(){
 # downloads your dotfiles, decrypts them, and mv them where needed 
 getDots(){
     echo '<Get dDots>'
-    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url localhost:5000/api/list_files
+    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url $URL/api/list_files
     
 }
 
@@ -149,9 +147,9 @@ getPackageManager(){
     done
 }
 
-#################
-# Program
-#################
+###########################
+# Entry point #
+###############
 echo "Checking if you are root(needed if you dont have gpg installer on system)"
 if [ $(whoami) != "root" ]; then 
     echo "[!] You are not root"; 
@@ -161,19 +159,19 @@ fi;
 PACKAGE_MANAGER=$(getPackageManager)
 echo "Your package manager is $PACKAGE_MANAGER"
 echo "Installing gpg and 7z"
-sudo $PACKAGE_MANAGER install gpg p7zip-full curl -y
+sudo $PACKAGE_MANAGER install gpg p7zip-full -y
 echo "Now you're good to go"
 
 echo "Welcome to your one stop to safe dots"
 while true; do
-    read -p "[?] Do you have account at localhost:5000(y/N)?" yn
+    read -p "[?] Do you have account at $URL(y/N)?" yn
     case $yn in
         [Yy]* )
             SESSID=$(login)
             if [ $SESSID == 0 ]; then
                 echo "[!] Wrong email or password!"
             else
-                echo -e "\e[32m[OK]\e[0m Successfully logged in"
+                echo -e "[ \e[32mOK\e[0m ] Successfully logged in"
                 break
             fi
             ;;
@@ -183,7 +181,7 @@ while true; do
             if [ $SESSID == 0 ]; then
                 echo "[!] Wrong email or password!"
             else
-                echo -e "\e[32m[OK]\e[0m Successfully logged in"
+                echo -e "[ \e[32mOK\e[0m ] Successfully logged in"
                 break
             fi
             ;;
