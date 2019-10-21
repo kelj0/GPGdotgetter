@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ###################################
 # @author: kelj0
 # @github: https://github.com/kelj0
@@ -40,8 +42,7 @@ login(){
     read email 
     echo 'Password: '>&2
     read -s password
-    echo "Loging in with $email : $password">&2
-    sessid=$(echo $(curl -b cookie -c cookie -H 'Content-Type:application/json' $URL/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
+    sessid=$(echo $(curl -s -b cookie -c cookie -H 'Content-Type:application/json' $URL/api/login -d "{'email':'$email','password':'$password'}" | awk '$1 ~ /sessionID/ {print $2}' | sed s/\'//g) | sed s/\"//g)
     if [ ${#sessid} == 256 ]; then 
         echo $sessid
     else
@@ -118,9 +119,9 @@ gatherAndCompressDots(){
 
 # downloads your dotfiles, decrypts them, and mv them where needed 
 getDots(){
-    echo '<Get dDots>'
-    curl -b cookie -c cookie -X GET -F "sessionID=$1" --url $URL/api/list_files
-    
+    echo '<Get Dots>' # TODO
+    res=$(echo $(curl -b cookie -c cookie -X GET -F "sessionID=$1" --url $URL/api/list_files))
+    echo $res | tail -n +2 | head -n -2 | awk '{print $1}' | sed 's/://g;s/"//g'
 }
 
 # collects,encrypts and uploads your dotfiles to server
