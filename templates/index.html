@@ -1,54 +1,20 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>Home</title>
-        <!-- Load required Bootstrap and BootstrapVue CSS -->
-        <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
-        <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
-        <!-- Load polyfills to support older browsers -->
-        <script src="//polyfill.io/v3/polyfill.min.js?features=es2015%2CIntersectionObserver" crossorigin="anonymous"></script>
-        <!--Axios-->
-        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+{% extends "base.html" %}
 
-        <link rel="stylesheet" href="../static/index.css">
-    </head>
-    <body>
-        <div id="app">
-            {% if session['logged_in'] %}
-                <button id="btn_dotfiles" v-on:click="dotfiles">Dotfiles</button>
-                <button id="btn_logout" v-on:click="logout">Logout</button>
-            {% else %}
-                <button id="btn_login" v-on:click="showlogin">Login</button>
-            {% endif %}
-            <div id="login">
-                <ul>
-                    <li><input type="text" id='input_email_login' name='email' placeholder="Email"></li>
-                    <li><input type="password" id='input_password_login' name='password' placeholder="Password"></li>
-                    <li><button class="btn btn-default" value="Login" v-on:click="login">Login</button></li>
-                    <p v-if="response != null" id="p_response_login"><strong>[[ response ]]</strong></p>
-                </ul>
-            </div>
-            <div v-if="token != null">
-                <h1>SessionID:</h1>
-                <p>local token:  [[ token ]]</p>
-                <p>server token: {{ session['sessionID'] }}</p>
-            </div>
-
-            <div id="safewrapper">
-                <img src="../res/safe.png">
-            </div>
-        </div>
-        <!--FOOTER-->
-        <footer class="footer">
-            <div style="text-align: center;margin-top: 50px;background-color: rgb(126, 115, 67)">
-                <p style="margin-bottom:0;">
-                <strong>GPGdotgetter project </strong> by Karlo (kelj0) Kegljevic, 2019</a>.
-                </p>
-            </div>
-        </footer> 
-    </body>
-    <!-- Load Vue followed by BootstrapVue -->
-    <script src="//unpkg.com/vue@latest/dist/vue.min.js"></script>
-    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
-    <script src="../static/index.js"></script>
-</html>
+{% block body_block %}
+<div id="app">
+    {% if session['logged_in'] %}
+        <p>Welcome {{ session['email'] }}</p>
+        <button id="btn_dotfiles" v-on:click="dotfiles">Dotfiles</button>
+        <button id="btn_logout" v-on:click="logout">Logout</button>
+    {% else %}
+    <div id="login">
+        <ul>
+            <li><input type="text" id='input_email_login' name='email' placeholder="Email"></li>
+            <li><input type="password" id='input_password_login' name='password' placeholder="Password"></li>
+            <li><b-button variant="success" value="Login" v-on:click="login">Login</b-button></li>
+            <p v-if="response != null" id="p_response_login"><strong>[[ response ]]</strong></p>
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

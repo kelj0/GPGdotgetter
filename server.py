@@ -29,6 +29,13 @@ def login_required(req):
                         'message': 'You are unauthorized to access that'
                         })
             except (KeyError, SyntaxError):
+                try:
+                    session.pop('logged_in') # pop out all session stuff(fixes some cases of session not breaking properly)
+                    session.pop('sessionID')
+                    session.pop('email')
+                except Exception:
+                    pass
+                finally:
                     return jsonify({
                         'code': 400,
                         'message': 'SessionID is missing'
@@ -45,15 +52,19 @@ def index():
 
 # ================
 # routes.api =====
-@app.route('/api/logout')
+@app.route('/api/logout', methods=['POST'])
 @login_required(request)
 def logout():
-    session.pop('logged_in', None)
-    session.pop('sessionID', None)
-    return jsonify({
-        'code': 205,
-        'message': 'Sucessfully logged out'
-        })
+    try:
+        session.pop('logged_in', None)
+        session.pop('sessionID', None)
+    except Exception:
+        pass
+    finally:
+        return jsonify({
+            'code': 205,
+            'message': 'Sucessfully logged out'
+            })
 
 @app.route('/api/login', methods=['POST'])
 def API_login():

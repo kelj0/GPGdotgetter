@@ -9,6 +9,7 @@ window.app = new Vue({
         logout: function(event){
             axios
                 .post('/api/logout')
+                .then(window.location.reload())
             this.token = null
             localStorage.setItem('TOKEN',null)
         },
@@ -37,6 +38,7 @@ window.app = new Vue({
                         }
                     }
                 )
+                .then(window.location.reload())
         },
         dotfiles: function(event){
             console.log("implement me")
