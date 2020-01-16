@@ -28,8 +28,9 @@ def login_required(req):
                         'code': 403,
                         'message': 'You are unauthorized to access that'
                         })
-            except (KeyError, SyntaxError):
+            except (KeyError, SyntaxError) as e:
                 try:
+                    print(e)
                     session.pop('logged_in') # pop out all session stuff(fixes some cases of session not breaking properly)
                     session.pop('sessionID')
                     session.pop('email')
@@ -73,7 +74,7 @@ def API_login():
         try:
             email = ast.literal_eval(request.data.decode('UTF-8'))['email']
             password = ast.literal_eval(request.data.decode('UTF-8'))['password']
-        except (ValueError, KeyError):
+        except (ValueError, KeyError,SyntaxError):
             return jsonify({
                 'code': 400,
                 'message': 'Invalid input'

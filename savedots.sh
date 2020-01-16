@@ -121,10 +121,11 @@ gatherAndCompressDots(){
 getDots(){
     echo '<Get Dots>' # TODO
     res=$(echo $(curl -b cookie -c cookie -X GET -F "sessionID=$1" --url $URL/api/list_files))
-    res=$(echo $res | tail -n +2 | head -n -2) # clear from brackets and status code
-    downloadTokens=$(echo $res | awk '{print $1}' | set 's/://g;s/"//g')
-    downloadNames=$(echo $res | awk '{print $1}' | set 's/://g;s/"//g')
-    readarray -t y <<<$(echo $res | tail -n +2 | head -n -2 | awk '{print $1}' | sed 's/://g;s/"//g')
+    downloadTokens=$(echo $res | sed 's/,/\n/g; s/{//g; s/\"//g; s/\://g' | head -n -1 | awk '{ print $1 }') 
+    downloadNames=$(echo $res | sed 's/,/\n/g; s/{//g; s/\"//g; s/\://g' | head -n -1 | awk '{ print $2 }')
+   # readarray -t y <<<$(echo $res | tail -n +2 | head -n -2 | awk '{print $1}' | sed 's/://g;s/"//g')
+    echo "Download names\n $downloadNames"
+    echo "Download tokens\n $downloadTokens"
     # TODO: choose dots to save and unpack them
     # while true; do
     #     read -p "[?] Choose dots to restore"
