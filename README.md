@@ -3,6 +3,8 @@ Easily and securely store and deploy your dotfiles
 
 `TODO:`
 
+- [ ] new app in django
+
 - [ ] - Setup
     - [x] - create script to gather all dotfiles
     - [ ] - makefile
