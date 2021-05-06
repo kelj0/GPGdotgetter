@@ -13,9 +13,15 @@
 - /dots/edit
 
 #### Models (approx)
-user
-dotfile
+* user
+    * id
+    * username
+    * email
+    * password
+* dotfile
+    * name
+    * owner
 
-#### db diagram :todo:
+`dotfile m<->n user`, but owner is the one that uploaded it and can change it
 
 
